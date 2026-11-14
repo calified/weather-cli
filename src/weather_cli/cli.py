@@ -5,7 +5,6 @@ import sys
 from . import forecast, geocoding
 from .display import render
 
-
 def past_days(value):
     try:
         n = int(value)

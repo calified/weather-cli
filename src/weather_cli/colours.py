@@ -8,7 +8,7 @@ from .cli import main as run
 
 RESET = "\033[0m"
 
-# Condition names the display shows (kept here so this file is standalone)
+# Condition names that the display shows.
 CONDITIONS = [
     "Clear sky", "Mainly clear", "Partly cloudy", "Overcast",
     "Fog", "Freezing fog",
@@ -32,51 +32,51 @@ def to_c(value, unit):
 
 def temp_code(t):
     if t <= 0:
-        return "94"   # bright blue
+        return "94"   # BrightBlue
     if t < 10:
-        return "36"   # cyan
+        return "36"   # Cyan
     if t < 18:
-        return "32"   # green
+        return "32"   # Green
     if t < 25:
-        return "33"   # yellow
-    return "31"       # red
+        return "33"   # Yellow
+    return "31"       # Red
 
 
 def rain_code(p):
     if p >= 60:
-        return "94"   # bright blue
+        return "94"   # BrightBlue
     if p >= 30:
-        return "36"   # cyan
-    return "2"        # dim
+        return "36"   # Cyan
+    return "2"        # Dim (dry)
 
 
 def amount_code(value, unit):
     mm = value * 25.4 if unit == "in" else value
     if mm >= 5:
-        return "94"   # bright blue
+        return "94"   # BrightBlue
     if mm > 0:
-        return "36"   # cyan
-    return "2"        # dim (dry)
+        return "36"   # Cyan
+    return "2"        # Dim (dry)
 
 
 def cond_code(desc):
     d = desc.lower()
     if "thunder" in d:
-        return "35"   # magenta
+        return "35"   # Magenta
     if "snow" in d:
-        return "97"   # bright white
+        return "97"   # BrightWhite
     if "rain" in d or "drizzle" in d or "shower" in d:
-        return "94"   # bright blue
+        return "94"   # BrightBlue
     if "fog" in d:
-        return "90"   # grey
+        return "90"   # Grey
     if "cloud" in d or "overcast" in d:
-        return "37"   # white
+        return "37"   # White
     if "clear" in d:
-        return "93"   # bright yellow
+        return "93"   # BrightYellow
     return "0"
 
 
-# Longest names first so "Light rain" wins over "Rain"
+# Longest names first so 'light rain' wins over 'rain'.
 _conds = "|".join(re.escape(c) for c in sorted(CONDITIONS, key=len, reverse=True))
 
 PATTERN = re.compile(
@@ -117,12 +117,12 @@ def colourise(text):
         if not line.strip():
             continue
         if not header_done:
-            lines[i] = paint(line, "1;96")   # bold bright cyan place name
+            lines[i] = paint(line, "1;96")   # Bold bright cyan place name
             header_done = True
         elif line.startswith("Past "):
-            lines[i] = paint(line, "1;33")   # bold yellow: past section heading
+            lines[i] = paint(line, "1;33")   # Bold yellow: past section heading
         elif line == "Forecast":
-            lines[i] = paint(line, "1;92")   # bold bright green: forecast heading
+            lines[i] = paint(line, "1;92")   # Bold bright green: forecast heading
         else:
             lines[i] = PATTERN.sub(_sub, line)
     return "\n".join(lines)
@@ -139,11 +139,11 @@ def _enable_windows_ansi():
         import ctypes
 
         kernel32 = ctypes.windll.kernel32
-        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        handle = kernel32.GetStdHandle(-11)
         mode = ctypes.c_ulong()
         if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
             return False
-        # 0x0004 = ENABLE_VIRTUAL_TERMINAL_PROCESSING
+        # Terminal processing: 0x0004 = ENABLE_VIRTUAL_TERMINAL_PROCESSING
         return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
     except Exception:
         return False
@@ -160,7 +160,7 @@ def _safe_stdout():
 def main(argv=None):
     _safe_stdout()
 
-    # Plain output when piped, when NO_COLOR is set, or if the console can't do colour
+    # Plain output when piped, when NO_COLOR is set, or if the terminal can't do colour.
     if (
         not sys.stdout.isatty()
         or "NO_COLOR" in os.environ

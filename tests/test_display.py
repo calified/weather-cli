@@ -15,7 +15,6 @@ SAMPLE = {
     },
 }
 
-
 def test_no_past_has_no_headings():
     out = render("Test", SAMPLE, "metric", 0)
     assert "Past" not in out
