@@ -8,8 +8,7 @@ from .cli import main as run
 
 RESET = "\033[0m"
 
-# Condition names the display shows.
-# (Keep here so this file is standalone)
+# Condition names the display shows (kept here so this file is standalone)
 CONDITIONS = [
     "Clear sky", "Mainly clear", "Partly cloudy", "Overcast",
     "Fog", "Freezing fog",
@@ -33,22 +32,31 @@ def to_c(value, unit):
 
 def temp_code(t):
     if t <= 0:
-        return "94"   #Bright Blue
+        return "94"   # bright blue
     if t < 10:
-        return "36"   #Cyan
+        return "36"   # cyan
     if t < 18:
-        return "32"   #Green
+        return "32"   # green
     if t < 25:
-        return "33"   #Yellow
-    return "31"       #Red
+        return "33"   # yellow
+    return "31"       # red
 
 
 def rain_code(p):
     if p >= 60:
-        return "94"   #Bright blue
+        return "94"   # bright blue
     if p >= 30:
-        return "36"   #Cyan
-    return "2"        #Dim
+        return "36"   # cyan
+    return "2"        # dim
+
+
+def amount_code(value, unit):
+    mm = value * 25.4 if unit == "in" else value
+    if mm >= 5:
+        return "94"   # bright blue
+    if mm > 0:
+        return "36"   # cyan
+    return "2"        # dim (dry)
 
 
 def cond_code(desc):
@@ -75,6 +83,7 @@ PATTERN = re.compile(
     r"(?P<range>(?P<lo>-?\d+)–(?P<hi>-?\d+)°(?P<ru>[CF]))"
     r"|(?P<temp>(?P<t>-?\d+)°(?P<tu>[CF]))"
     r"|(?P<rain>rain (?P<p>\d+)%)"
+    r"|(?P<amt>rain (?P<a>\d+(?:\.\d+)?) (?P<au>mm|in))"
     r"|(?P<date>\d{4}-\d{2}-\d{2})"
     r"|(?P<wind>\d+ (?:km/h|mph))"
     r"|(?P<cond>" + _conds + r")"
@@ -92,6 +101,8 @@ def _sub(m):
         return paint(m.group("temp"), temp_code(to_c(int(m.group("t")), u)))
     if m.group("rain"):
         return paint(m.group("rain"), rain_code(int(m.group("p"))))
+    if m.group("amt"):
+        return paint(m.group("amt"), amount_code(float(m.group("a")), m.group("au")))
     if m.group("date"):
         return paint(m.group("date"), "2")
     if m.group("wind"):
@@ -108,6 +119,10 @@ def colourise(text):
         if not header_done:
             lines[i] = paint(line, "1;96")   # bold bright cyan place name
             header_done = True
+        elif line.startswith("Past "):
+            lines[i] = paint(line, "1;33")   # bold yellow: past section heading
+        elif line == "Forecast":
+            lines[i] = paint(line, "1;92")   # bold bright green: forecast heading
         else:
             lines[i] = PATTERN.sub(_sub, line)
     return "\n".join(lines)
