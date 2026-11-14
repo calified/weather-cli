@@ -1,5 +1,11 @@
 # weather-cli
 
+> Check the weather from your terminal. Colour-coded, no API key, standard library only.
+
+<p align="center">
+  <img src="docs/images/default.png" alt="weather-cli showing a three-day forecast for London in colour" width="650">
+</p>
+
 A small command-line weather tool for macOS, Linux and Windows. Check the forecast for your current location (or any city) straight from the terminal, with colour-coded output and an optional look back at the past week.
 
 Built with Python's standard library only. Weather data comes from [Open-Meteo](https://open-meteo.com) (no API key needed).
@@ -182,10 +188,13 @@ weather-cli/
 ├── pyproject.toml
 ├── README.md
 ├── .gitignore
+├── docs/
+│   └── images/
+│       └── default.png     # screenshot used in this README
 ├── src/
 │   └── weather_cli/
 │       ├── __init__.py
-│       ├── __main__.py     # enables `python -m weather_cli`
+│       ├── __main__.py
 │       ├── cli.py          # argument parsing, ties everything together
 │       ├── colours.py      # colours the output (the installed entry point)
 │       ├── geocoding.py    # place name / IP -> coordinates
@@ -220,7 +229,7 @@ For an editable install, do not move or delete the project folder, since the ins
 | Problem | Fix |
 |---|---|
 | `weather: command not found` (macOS/Linux) | Run `pipx ensurepath`, then restart the terminal |
-| `'weather' is not recognized` (Windows) | Run `py -m pipx ensurepath`, then close and reopen the terminal. Meanwhile `py -m weather_cli` also works |
+| `'weather' is not recognized` (Windows) | Run `py -m pipx ensurepath`, then close and reopen the terminal. `pipx ensurepath` also prints where the command lives |
 | `py` is not recognized (Windows) | Install Python from python.org (tick "Add python.exe to PATH"), or use `python -m pip ...` instead of `py -m pip ...` |
 | `pipx install git+...` fails with "git not found" | Install Git, or use the `.zip` install command instead |
 | PowerShell blocks scripts when activating a venv | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once |
