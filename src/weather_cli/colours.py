@@ -128,9 +128,44 @@ def colourise(text):
     return "\n".join(lines)
 
 
+def _enable_windows_ansi():
+    """Turn on ANSI colour support in the Windows console.
+
+    Returns True if colours can be used. Always True on macOS/Linux.
+    """
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        mode = ctypes.c_ulong()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            return False
+        # 0x0004 = ENABLE_VIRTUAL_TERMINAL_PROCESSING
+        return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
+    except Exception:
+        return False
+
+
+def _safe_stdout():
+    """Keep the console's own encoding, but never crash on a character it can't show."""
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
+
+
 def main(argv=None):
-    # Plain output when piped or when NO_COLOR is set
-    if not sys.stdout.isatty() or "NO_COLOR" in os.environ:
+    _safe_stdout()
+
+    # Plain output when piped, when NO_COLOR is set, or if the console can't do colour
+    if (
+        not sys.stdout.isatty()
+        or "NO_COLOR" in os.environ
+        or not _enable_windows_ansi()
+    ):
         run(argv)
         return
 
