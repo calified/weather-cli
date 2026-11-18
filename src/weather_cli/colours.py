@@ -1,14 +1,11 @@
-import io
 import os
 import re
 import sys
-from contextlib import redirect_stdout
 
 from .cli import main as run
 
 RESET = "\033[0m"
 
-# Condition names that the display shows.
 CONDITIONS = [
     "Clear sky", "Mainly clear", "Partly cloudy", "Overcast",
     "Fog", "Freezing fog",
@@ -26,57 +23,55 @@ def paint(text, code):
 
 
 def to_c(value, unit):
-    """Convert to Celsius so colour thresholds work for both units."""
     return (value - 32) * 5 / 9 if unit == "F" else value
 
 
 def temp_code(t):
     if t <= 0:
-        return "94"   # BrightBlue
+        return "94"
     if t < 10:
-        return "36"   # Cyan
+        return "36"
     if t < 18:
-        return "32"   # Green
+        return "32"
     if t < 25:
-        return "33"   # Yellow
-    return "31"       # Red
+        return "33"
+    return "31"
 
 
 def rain_code(p):
     if p >= 60:
-        return "94"   # BrightBlue
+        return "94"
     if p >= 30:
-        return "36"   # Cyan
-    return "2"        # Dim (dry)
+        return "36"
+    return "2"
 
 
 def amount_code(value, unit):
     mm = value * 25.4 if unit == "in" else value
     if mm >= 5:
-        return "94"   # BrightBlue
+        return "94"
     if mm > 0:
-        return "36"   # Cyan
-    return "2"        # Dim (dry)
+        return "36"
+    return "2"
 
 
 def cond_code(desc):
     d = desc.lower()
     if "thunder" in d:
-        return "35"   # Magenta
+        return "35"
     if "snow" in d:
-        return "97"   # BrightWhite
+        return "97"
     if "rain" in d or "drizzle" in d or "shower" in d:
-        return "94"   # BrightBlue
+        return "94"
     if "fog" in d:
-        return "90"   # Grey
+        return "90"
     if "cloud" in d or "overcast" in d:
-        return "37"   # White
+        return "37"
     if "clear" in d:
-        return "93"   # BrightYellow
+        return "93"
     return "0"
 
 
-# Longest names first so 'light rain' wins over 'rain'.
 _conds = "|".join(re.escape(c) for c in sorted(CONDITIONS, key=len, reverse=True))
 
 PATTERN = re.compile(
@@ -117,22 +112,22 @@ def colourise(text):
         if not line.strip():
             continue
         if not header_done:
-            lines[i] = paint(line, "1;96")   # Bold bright cyan place name
+            lines[i] = paint(line, "1;96")
             header_done = True
         elif line.startswith("Past "):
-            lines[i] = paint(line, "1;33")   # Bold yellow: past section heading
+            lines[i] = paint(line, "1;33")
         elif line == "Forecast":
-            lines[i] = paint(line, "1;92")   # Bold bright green: forecast heading
+            lines[i] = paint(line, "1;92")
+        elif line.startswith("Update failed"):
+            lines[i] = paint(line, "31")
+        elif line.startswith("Updated "):
+            lines[i] = paint(line, "2")
         else:
             lines[i] = PATTERN.sub(_sub, line)
     return "\n".join(lines)
 
 
 def _enable_windows_ansi():
-    """Turn on ANSI colour support in the Windows console.
-
-    Returns True if colours can be used. Always True on macOS/Linux.
-    """
     if os.name != "nt":
         return True
     try:
@@ -143,14 +138,12 @@ def _enable_windows_ansi():
         mode = ctypes.c_ulong()
         if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
             return False
-        # Terminal processing: 0x0004 = ENABLE_VIRTUAL_TERMINAL_PROCESSING
         return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
     except Exception:
         return False
 
 
 def _safe_stdout():
-    """Keep the console's own encoding, but never crash on a character it can't show."""
     try:
         sys.stdout.reconfigure(errors="replace")
     except Exception:
@@ -160,18 +153,12 @@ def _safe_stdout():
 def main(argv=None):
     _safe_stdout()
 
-    # Plain output when piped, when NO_COLOR is set, or if the terminal can't do colour.
-    if (
-        not sys.stdout.isatty()
-        or "NO_COLOR" in os.environ
-        or not _enable_windows_ansi()
-    ):
+    use_colour = (
+        sys.stdout.isatty()
+        and "NO_COLOR" not in os.environ
+        and _enable_windows_ansi()
+    )
+    if use_colour:
+        run(argv, out=lambda text: print(colourise(text)))
+    else:
         run(argv)
-        return
-
-    buf = io.StringIO()
-    try:
-        with redirect_stdout(buf):
-            run(argv)
-    finally:
-        sys.stdout.write(colourise(buf.getvalue()))
